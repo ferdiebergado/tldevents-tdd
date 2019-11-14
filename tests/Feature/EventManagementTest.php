@@ -2,17 +2,47 @@
 
 namespace Tests\Feature;
 
+use App\User;
 use App\Event;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class EventManagementTest extends TestCase
 {
     use RefreshDatabase;
     use WithFaker;
 
-    public function testAnEventCanBeCreated()
+    private $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = factory(User::class)->create();
+        $this->actingAs($this->user);
+    }
+
+    public function testAnEventCannotBeCreatedByAGuestUser()
+    {
+        auth()->logout();
+
+        $response = $this->post('/events', $this->data());
+
+        $response->assertRedirect('/login');
+    }
+
+    public function testAnEventCannotBeCreatedByAnUnverifiedUser()
+    {
+        auth()->logout();
+
+        $user = factory(User::class)->create(['email_verified_at' => null]);
+
+        $response = $this->actingAs($user)->post('/events', $this->data());
+
+        $response->assertRedirect('/email/verify');
+    }
+
+    public function testAnEventCanBeCreatedByAVerifiedUser()
     {
         $response = $this->post('/events', $this->data());
 
@@ -22,15 +52,6 @@ class EventManagementTest extends TestCase
         $response->assertRedirect('/events/' . $event->id);
         $response->assertSessionHas('success');
         $this->assertEquals('Event saved.', session('success'));
-    }
-
-    public function testNoDuplicateEventIsCreated()
-    {
-        for ($i = 0; $i < 2; $i++) {
-            $this->post('/events', $this->data());
-        }
-
-        $this->assertEquals(1, Event::all()->count());
     }
 
     public function testAnEventTitleIsRequired()
@@ -115,6 +136,15 @@ class EventManagementTest extends TestCase
         $response = $this->post('/events', array_merge($this->data(), ['end_date' => now()->subDays(4)->toDateString()]));
 
         $response->assertSessionHasErrors('end_date');
+    }
+
+    public function testNoDuplicateEventIsCreated()
+    {
+        for ($i = 0; $i < 2; $i++) {
+            $this->post('/events', $this->data());
+        }
+
+        $this->assertEquals(1, Event::all()->count());
     }
 
     public function testAnEventCanBeUpdated()
