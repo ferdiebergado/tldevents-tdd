@@ -24,6 +24,15 @@ class EventManagementTest extends TestCase
         $this->assertEquals('Event saved.', session('success'));
     }
 
+    public function testNoDuplicateEventIsCreated()
+    {
+        for ($i = 0; $i < 2; $i++) {
+            $this->post('/events', $this->data());
+        }
+
+        $this->assertEquals(1, Event::all()->count());
+    }
+
     public function testAnEventTitleIsRequired()
     {
         $response = $this->post('/events', array_merge($this->data(), ['title' => '']));
@@ -141,6 +150,17 @@ class EventManagementTest extends TestCase
         }
     }
 
+    public function testEventsCanBeFetchedAsJson()
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/events', $this->fakeData());
+        }
+
+        $response = $this->json('GET', '/events');
+
+        $response->assertJsonCount(5, 'data');
+    }
+
     public function testAnEventCanBeDeleted()
     {
         $this->post('/events', $this->data());
@@ -165,6 +185,17 @@ class EventManagementTest extends TestCase
             'end_date' => now()->addDays(3)->toDateString(),
             'type' => 'W',
             'grouping' => 'R'
+        ];
+    }
+
+    public function fakeData()
+    {
+        return [
+            'title' => $this->faker->text,
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addDays($this->faker->numberBetween(1, 30))->toDateString(),
+            'type' => $this->faker->randomElement(['W', 'T', 'C']),
+            'grouping' => $this->faker->randomElement(['R', 'L', 'M', 'N'])
         ];
     }
 }

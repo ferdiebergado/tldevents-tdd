@@ -19,3 +19,4 @@ Route::post('/events', 'EventController@store');
 Route::put('/events/{event}', 'EventController@update');
 Route::delete('/events/{event}', 'EventController@destroy');
 Route::get('/events/{event}', 'EventController@show');
+Route::get('/events', 'EventController@index');
