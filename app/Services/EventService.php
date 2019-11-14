@@ -2,8 +2,9 @@
 
 namespace App\Services;
 
-use App\Repositories\EventRepositoryInterface;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use App\Repositories\EventRepositoryInterface;
 
 class EventService
 {
@@ -26,7 +27,21 @@ class EventService
 
     public function create(array $validated)
     {
-        return $this->repository->firstOrCreate(Arr::only($validated, ['title', 'start_date', 'end_date']), Arr::only($validated, ['type', 'grouping']));
+        DB::beginTransaction();
+        try {
+            $isActive = '';
+            if (array_key_exists('is_active', $validated)) {
+                $isActive = 'is_active';
+                $active = $this->repository->activeByAuthUser();
+                $active->update(['is_active' => false]);
+            }
+            $event = $this->repository->firstOrCreate(Arr::only($validated, ['title', 'start_date', 'end_date']), Arr::only($validated, ['type', 'grouping', $isActive]));
+        } catch (\Exception $e) {
+            DB::rollback();
+            throw $e;
+        }
+        DB::commit();
+        return $event;
     }
 
     public function update(int $id, array $validated)

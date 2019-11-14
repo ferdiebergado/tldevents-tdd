@@ -12,4 +12,9 @@ class EventEloquentRepository extends EloquentBaseRepository implements EventRep
     {
         parent::__construct($event);
     }
+
+    public function activeByAuthUser()
+    {
+        return $this->model->whereIsActive(true)->whereCreatedBy(auth()->id())->latest()->first();
+    }
 }

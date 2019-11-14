@@ -207,6 +207,17 @@ class EventManagementTest extends TestCase
         $this->assertEquals('Event deleted.', session('success'));
     }
 
+    public function testOnlyOneEventIsActivatedByAUser()
+    {
+        factory(Event::class, 5)->create();
+        factory(Event::class)->create(['is_active' => true]);
+        $event = factory(Event::class)->make(['is_active' => true]);
+
+        $this->post('/events', $event->toArray());
+
+        $this->assertCount(1, Event::whereIsActive(true)->whereCreatedBy($this->user->id)->get());
+    }
+
     public function data()
     {
         return [

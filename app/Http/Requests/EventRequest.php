@@ -35,7 +35,8 @@ class EventRequest extends FormRequest
             'grouping' => [
                 'required',
                 Rule::in(['R', 'L', 'M', 'N'])
-            ]
+            ],
+            'is_active' => 'sometimes|boolean'
         ];
     }
 }
