@@ -90,9 +90,27 @@ class EventManagementTest extends TestCase
         $response->assertSessionHasErrors('title');
     }
 
+    public function testAnEventTitleIsRequiredOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['title' => '']));
+
+        $response->assertSessionHasErrors('title');
+    }
+
     public function testAnEventTitleShouldBeAtLeastTwoCharacters()
     {
         $response = $this->post('/events', array_merge($this->data(), ['title' => 'T']));
+
+        $response->assertSessionHasErrors('title');
+    }
+
+    public function testAnEventTitleShouldBeAtLeastTwoCharactersOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['title' => 'T']));
 
         $response->assertSessionHasErrors('title');
     }
@@ -104,9 +122,27 @@ class EventManagementTest extends TestCase
         $response->assertSessionHasErrors('title');
     }
 
+    public function testAnEventTitleShouldNotExceedMaxCharactersOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['title' => $this->faker->realText(300)]));
+
+        $response->assertSessionHasErrors('title');
+    }
+
     public function testAnEventStartDateIsRequired()
     {
         $response = $this->post('/events', array_merge($this->data(), ['start_date' => '']));
+
+        $response->assertSessionHasErrors('start_date');
+    }
+
+    public function testAnEventStartDateIsRequiredOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['start_date' => '']));
 
         $response->assertSessionHasErrors('start_date');
     }
@@ -118,9 +154,27 @@ class EventManagementTest extends TestCase
         $response->assertSessionHasErrors('end_date');
     }
 
+    public function testAnEventEndDateIsRequiredOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['end_date' => '']));
+
+        $response->assertSessionHasErrors('end_date');
+    }
+
     public function testAnEventTypeIsRequired()
     {
         $response = $this->post('/events', array_merge($this->data(), ['type' => '']));
+
+        $response->assertSessionHasErrors('type');
+    }
+
+    public function testAnEventTypeIsRequiredOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['type' => '']));
 
         $response->assertSessionHasErrors('type');
     }
@@ -132,9 +186,27 @@ class EventManagementTest extends TestCase
         $response->assertSessionHasErrors('type');
     }
 
+    public function testAnEventTypeIsWithinTheSpecifiedValueOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['type' => 'X']));
+
+        $response->assertSessionHasErrors('type');
+    }
+
     public function testAnEventGroupingIsRequired()
     {
         $response = $this->post('/events', array_merge($this->data(), ['grouping' => '']));
+
+        $response->assertSessionHasErrors('grouping');
+    }
+
+    public function testAnEventGroupingIsRequiredOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['grouping' => '']));
 
         $response->assertSessionHasErrors('grouping');
     }
@@ -146,9 +218,27 @@ class EventManagementTest extends TestCase
         $response->assertSessionHasErrors('grouping');
     }
 
+    public function testAnEventGroupingIsWithinTheSpecifiedValueOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['grouping' => 'X']));
+
+        $response->assertSessionHasErrors('grouping');
+    }
+
     public function testAnEventStartDateIsADate()
     {
         $response = $this->post('/events', array_merge($this->data(), ['start_date' => 'notadate2019']));
+
+        $response->assertSessionHasErrors('start_date');
+    }
+
+    public function testAnEventStartDateIsADateOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['start_date' => 'notadate2019']));
 
         $response->assertSessionHasErrors('start_date');
     }
@@ -160,9 +250,27 @@ class EventManagementTest extends TestCase
         $response->assertSessionHasErrors('end_date');
     }
 
+    public function testAnEventEndDateIsADateOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['end_date' => 'notadate2019']));
+
+        $response->assertSessionHasErrors('end_date');
+    }
+
     public function testAnEventEndDateMustBeGreaterThanOrEqualToStartDate()
     {
         $response = $this->post('/events', array_merge($this->data(), ['end_date' => now()->subDays(4)->toDateString()]));
+
+        $response->assertSessionHasErrors('end_date');
+    }
+
+    public function testAnEventEndDateMustBeGreaterThanOrEqualToStartDateOnUpdate()
+    {
+        $event = factory(Event::class)->create();
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), ['end_date' => now()->subDays(4)->toDateString()]));
 
         $response->assertSessionHasErrors('end_date');
     }
@@ -195,8 +303,6 @@ class EventManagementTest extends TestCase
         $this->assertEquals($event->title, $event->fresh()->title);
 
         $response->assertRedirect('/email/verify');
-        // $response->assertSessionHas('info');
-        // $this->assertEquals('Event updated.', session('info'));
     }
 
     public function testAnEventCanBeUpdatedByAnActiveEncoder()
