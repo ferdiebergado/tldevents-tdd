@@ -4,10 +4,11 @@ namespace Tests\Feature;
 
 use App\User;
 use App\Event;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Tests\TestCase;
-use Illuminate\Support\Arr;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EventManagementTest extends TestCase
 {
@@ -347,6 +348,17 @@ class EventManagementTest extends TestCase
         $this->assertEquals('Event updated.', session('info'));
     }
 
+    public function testReturnsNotFoundStatusWhenUpdatingANonExistingEvent()
+    {
+        $updates = [
+            'title' => 'Updated title'
+        ];
+
+        $response = $this->put('/events/9999999', array_merge($this->data(), $updates));
+
+        $response->assertNotFound();
+    }
+
     public function testAnEventCanBeViewedByAnActiveEncoder()
     {
         $this->post('/events', $this->data());
@@ -395,6 +407,13 @@ class EventManagementTest extends TestCase
             $response->assertSee($event->$key);
             $this->assertEquals($value, $event->$key);
         }
+    }
+
+    public function testReturnsNotFoundStatusWhenNonExistingEventIsViewed()
+    {
+        $response = $this->get('/events/999');
+
+        $response->assertNotFound();
     }
 
     public function testEventsCanBeFetchedAsJsonByAnActiveEncoder()
@@ -491,10 +510,19 @@ class EventManagementTest extends TestCase
         $this->assertEquals('Event deleted.', session('success'));
     }
 
+    public function testReturnsANotFoundStatusWhenDeletingANonExistingEvent()
+    {
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $response = $this->delete('/events/999999999');
+
+        $response->assertNotFound();
+    }
+
     public function testAnEventCanBeForcedDeletedByAnActiveAdmin()
     {
-        $this->withoutExceptionHandling();
-
         auth()->logout();
 
         $user = factory(User::class)->states(['active', 'admin'])->create();
@@ -524,6 +552,17 @@ class EventManagementTest extends TestCase
         $response->assertStatus(403);
 
         $this->assertEquals(1, Event::all()->count());
+    }
+
+    public function testReturnsANotFoundStatusWhenForceDeletingANonExistingEvent()
+    {
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $response = $this->delete('/events/999999999/force');
+
+        $response->assertNotFound();
     }
 
     public function testAnEventCanBeRestoredByAnActiveAdmin()
@@ -568,6 +607,19 @@ class EventManagementTest extends TestCase
         $response->assertSessionHas('success');
 
         $this->assertEquals('Event restored.', session('success'));
+    }
+
+    public function testReturnsANotFoundStatusWhenRestoringANonExistingEvent()
+    {
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $this->delete('/events/' . $event->id);
+
+        $response = $this->post('/events/999999999/restore');
+
+        $response->assertNotFound();
     }
 
     public function testAnActiveEncoderCannotRestoreAnotherEncodersEvent()

@@ -101,6 +101,24 @@ class EventServiceTest extends TestCase
         $this->assertCount(1, Event::all());
     }
 
+    public function testRestoreThrowsModelNotFoundExceptionOnNonExistingEvent()
+    {
+        $event = factory(Event::class)->create();
+
+        $user = factory(User::class)->states(['active', 'encoder'])->create();
+
+        $this->actingAs($user);
+
+        $this->service->delete($event);
+
+        $this->assertCount(0, Event::all());
+
+        $restored = $this->service->restore($event);
+
+        $this->assertTrue($restored);
+        $this->assertCount(1, Event::all());
+    }
+
     public function testForceDestroy()
     {
         $event = factory(Event::class)->create($this->data());
