@@ -34,10 +34,7 @@ class Event extends BaseModel
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'created_by' => 'integer',
-        'updated_by' => 'integer',
-        'deleted_by' => 'integer'
+        'is_active' => 'boolean'
     ];
 
     protected $appends = [

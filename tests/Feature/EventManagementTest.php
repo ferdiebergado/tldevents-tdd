@@ -4,15 +4,11 @@ namespace Tests\Feature;
 
 use App\User;
 use App\Event;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Tests\TestCase;
+use Tests\Feature\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EventManagementTest extends TestCase
 {
-    use RefreshDatabase;
     use WithFaker;
 
     private $user;
