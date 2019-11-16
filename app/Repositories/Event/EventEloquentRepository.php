@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\Event;
 
 use App\Event;
 use App\Repositories\EloquentBaseRepository;
-use App\Repositories\EventRepositoryInterface;
+use App\Repositories\Event\EventRepositoryInterface;
 
 class EventEloquentRepository extends EloquentBaseRepository implements EventRepositoryInterface
 {

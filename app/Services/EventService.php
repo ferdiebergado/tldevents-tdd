@@ -7,7 +7,7 @@ namespace App\Services;
 use App\Event;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use App\Repositories\EventRepositoryInterface;
+use App\Repositories\Event\EventRepositoryInterface;
 use App\BaseModel as Model;
 use Illuminate\Database\Eloquent\Collection;
 
