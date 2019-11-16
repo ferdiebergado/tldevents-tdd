@@ -1,31 +1,59 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
+use App\Event;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\EventRepositoryInterface;
+use App\BaseModel as Model;
+use Illuminate\Database\Eloquent\Collection;
 
 class EventService
 {
+    /** @var \App\Repositories\EventRepositoryInterface */
     protected $repository;
 
+    /**
+     * EventService Constructor
+     *
+     * @param EventRepositoryInterface $repository
+     */
     public function __construct(EventRepositoryInterface $repository)
     {
         $this->repository = $repository;
     }
 
-    public function showAll()
+    /**
+     * Show all events.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function showAll(): Collection
     {
         return $this->repository->latest();
     }
 
-    public function show($id)
+    /**
+     * Show an event
+     *
+     * @param integer $id
+     * @return Model|null
+     */
+    public function show(int $id): ?Model
     {
         return $this->repository->find($id);
     }
 
-    public function create(array $validated)
+    /**
+     * Create an event if not exists
+     *
+     * @param array $validated
+     * @return Model
+     */
+    public function create(array $validated): Model
     {
         DB::beginTransaction();
         try {
@@ -44,13 +72,49 @@ class EventService
         return $event;
     }
 
-    public function update(int $id, array $validated)
+    /**
+     * Update an event
+     *
+     * @param Event $event
+     * @param array $validated
+     * @return Model
+     */
+    public function update(Event $event, array $validated): Model
     {
-        return $this->repository->update($id, $validated);
+        return $this->repository->update($event, $validated);
     }
 
-    public function delete($id)
+    /**
+     * Delete an event.
+     *
+     * @param int $id
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @return bool
+     */
+    public function delete(Event $event): bool
     {
-        return $this->repository->delete($id);
+        return $this->repository->delete($event);
+    }
+
+    /**
+     * Permanently delete an event
+     *
+     * @param Event $event
+     * @return boolean
+     */
+    public function forceDestroy(Event $event): bool
+    {
+        return $this->repository->forceDelete($event);
+    }
+
+    /**
+     * Restore a soft-deleted event
+     *
+     * @param Event $event
+     * @return boolean
+     */
+    public function restore(Event $event): bool
+    {
+        return $this->repository->restore($event);
     }
 }

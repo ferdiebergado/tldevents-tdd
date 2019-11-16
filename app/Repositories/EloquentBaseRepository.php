@@ -2,19 +2,27 @@
 
 namespace App\Repositories;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Repositories\BaseRepositoryInterface;
+use App\BaseModel as Model;
+use App\Event;
 
 class EloquentBaseRepository implements BaseRepositoryInterface
 {
+    /** @var Model */
     protected $model;
 
+    /**
+     * EloquentBaseRepository Constructor
+     *
+     * @param Model $model
+     */
     public function __construct(Model $model)
     {
         $this->model = $model;
     }
 
-    public function find($id)
+    /** @inheritDoc */
+    public function find(int $id): ?Model
     {
         return $this->model->find($id);
     }
@@ -29,21 +37,34 @@ class EloquentBaseRepository implements BaseRepositoryInterface
         return $this->model->latest($date)->get();
     }
 
-    public function firstOrCreate($attrToCheck, $attributes)
+    /** @inheritDoc */
+    public function firstOrCreate(array $attributes, array $values): Model
     {
-        return $this->model->firstOrCreate($attrToCheck, $attributes);
+        return $this->model->firstOrCreate($attributes, $values);
     }
 
-    public function update($id, $attributes)
+    /** @inheritDoc */
+    public function update(Model $model, $attributes): Model
     {
-        $model = $this->find($id);
         $model->update($attributes);
         return $model->fresh();
     }
 
-    public function delete($id)
+    /** @inheritDoc */
+    public function delete(Model $model): bool
     {
-        $model = $this->find($id);
         return $model->delete();
+    }
+
+    /** @inheritDoc */
+    public function forceDelete(Model $model): bool
+    {
+        return $model->forceDelete();
+    }
+
+    /** @inheritDoc */
+    public function restore(Model $model): bool
+    {
+        return $model->restore();
     }
 }

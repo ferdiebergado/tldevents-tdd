@@ -2,11 +2,11 @@
 
 namespace App;
 
+use App\BaseModel;
 use App\Utils\Model\UserStampTrait;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Event extends Model
+class Event extends BaseModel
 {
     use UserStampTrait;
     use SoftDeletes;
@@ -42,7 +42,11 @@ class Event extends Model
 
     protected $appends = [
         'type_name',
-        'grouping_name'
+        'type_keys',
+        'type_names',
+        'grouping_name',
+        'grouping_keys',
+        'grouping_names'
     ];
 
     public function getTypeNameAttribute()
@@ -53,5 +57,25 @@ class Event extends Model
     public function getGroupingNameAttribute()
     {
         return self::GROUPINGS[$this->attributes['grouping']];
+    }
+
+    public function getTypeKeysAttribute()
+    {
+        return array_keys(self::TYPES);
+    }
+
+    public function getTypeNamesAttribute()
+    {
+        return array_values(self::TYPES);
+    }
+
+    public function getGroupingKeysAttribute()
+    {
+        return array_keys(self::GROUPINGS);
+    }
+
+    public function getGroupingNamesAttribute()
+    {
+        return array_values(self::GROUPINGS);
     }
 }

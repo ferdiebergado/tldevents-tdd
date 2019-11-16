@@ -28,6 +28,34 @@ class EventTest extends TestCase
         }
     }
 
+    public function testGetTypeKeysAttribute()
+    {
+        $event = factory(Event::class)->create();
+
+        $this->assertEquals(array_keys($this->data()['types']), $event->typeKeys);
+    }
+
+    public function testGetTypeNamesAttribute()
+    {
+        $event = factory(Event::class)->create();
+
+        $this->assertEquals(array_values($this->data()['types']), $event->typeNames);
+    }
+
+    public function testGetGroupingKeysAttribute()
+    {
+        $event = factory(Event::class)->create();
+
+        $this->assertEquals(array_keys($this->data()['groupings']), $event->groupingKeys);
+    }
+
+    public function testGetGroupingNamesAttribute()
+    {
+        $event = factory(Event::class)->create();
+
+        $this->assertEquals(array_values($this->data()['groupings']), $event->groupingNames);
+    }
+
     protected function data()
     {
         return [

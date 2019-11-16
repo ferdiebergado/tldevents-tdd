@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\User;
 use App\Event;
 use Tests\TestCase;
+use Illuminate\Support\Arr;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -18,7 +19,7 @@ class EventManagementTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->user = factory(User::class)->create();
+        $this->user = factory(User::class)->states(['active', 'encoder'])->create();
         $this->actingAs($this->user);
     }
 
@@ -42,9 +43,37 @@ class EventManagementTest extends TestCase
         $response->assertRedirect('/email/verify');
     }
 
-    public function testAnEventCanBeCreatedByAVerifiedUser()
+    public function testAnEventCannotBeCreatedByAnInactiveUser()
+    {
+        auth()->logout();
+
+        $user = factory(User::class)->create();
+
+        $response = $this->actingAs($user)->post('/events', $this->data());
+
+        $this->assertCount(0, Event::all());
+        $response->assertRedirect('/login');
+    }
+
+    public function testAnEventCanBeCreatedByAVerifiedAndActiveEncoder()
     {
         $response = $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $this->assertCount(1, Event::all());
+        $response->assertRedirect('/events/' . $event->id);
+        $response->assertSessionHas('success');
+        $this->assertEquals('Event saved.', session('success'));
+    }
+
+    public function testAnEventCanBeCreatedByAnAdminUser()
+    {
+        auth()->logout();
+
+        $admin = factory(User::class)->states(['active', 'admin'])->create();
+
+        $response = $this->actingAs($admin)->post('/events', $this->data());
 
         $event = Event::first();
 
@@ -147,7 +176,30 @@ class EventManagementTest extends TestCase
         $this->assertEquals(1, Event::all()->count());
     }
 
-    public function testAnEventCanBeUpdated()
+    public function testAnEventCannotBeUpdatedByAnUnverifiedUser()
+    {
+        $this->post('/events', $this->data());
+
+        auth()->logout();
+
+        $user = factory(User::class)->create(['email_verified_at' => null]);
+
+        $event = Event::first();
+
+        $updates = [
+            'title' => 'Updated title'
+        ];
+
+        $response = $this->actingAs($user)->put('/events/' . $event->id, array_merge($this->data(), $updates));
+
+        $this->assertEquals($event->title, $event->fresh()->title);
+
+        $response->assertRedirect('/email/verify');
+        // $response->assertSessionHas('info');
+        // $this->assertEquals('Event updated.', session('info'));
+    }
+
+    public function testAnEventCanBeUpdatedByAnActiveEncoder()
     {
         $this->post('/events', $this->data());
 
@@ -166,7 +218,30 @@ class EventManagementTest extends TestCase
         $this->assertEquals('Event updated.', session('info'));
     }
 
-    public function testAnEventCanBeViewed()
+    public function testAnEventCanBeUpdatedByAnActiveAdmin()
+    {
+        auth()->logout();
+
+        $user = factory(User::class)->states(['active', 'admin'])->create();
+
+        $this->actingAs($user)->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $updates = [
+            'title' => 'Updated title'
+        ];
+
+        $response = $this->put('/events/' . $event->id, array_merge($this->data(), $updates));
+
+        $this->assertEquals($updates['title'], $event->fresh()->title);
+
+        $response->assertRedirect('/events/' . $event->id);
+        $response->assertSessionHas('info');
+        $this->assertEquals('Event updated.', session('info'));
+    }
+
+    public function testAnEventCanBeViewedByAnActiveEncoder()
     {
         $this->post('/events', $this->data());
 
@@ -180,7 +255,43 @@ class EventManagementTest extends TestCase
         }
     }
 
-    public function testEventsCanBeFetchedAsJson()
+    public function testAnEventCanBeViewedByAnActiveAdmin()
+    {
+        auth()->logout();
+
+        $user = factory(User::class)->states(['active', 'admin'])->create();
+
+        $this->actingAs($user)->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $response = $this->get('/events/' . $event->id);
+
+        foreach ($this->data() as $key => $value) {
+            $response->assertSee($event->$key);
+            $this->assertEquals($value, $event->$key);
+        }
+    }
+
+    public function testAnEventCanBeViewedByAnActiveUser()
+    {
+        $this->post('/events', $this->data());
+
+        auth()->logout();
+
+        $user = factory(User::class)->state('active')->create();
+
+        $event = Event::first();
+
+        $response = $this->actingAs($user)->get('/events/' . $event->id);
+
+        foreach ($this->data() as $key => $value) {
+            $response->assertSee($event->$key);
+            $this->assertEquals($value, $event->$key);
+        }
+    }
+
+    public function testEventsCanBeFetchedAsJsonByAnActiveEncoder()
     {
         for ($i = 0; $i < 5; $i++) {
             $this->post('/events', $this->fakeData());
@@ -191,7 +302,37 @@ class EventManagementTest extends TestCase
         $response->assertJsonCount(5, 'data');
     }
 
-    public function testAnEventCanBeDeleted()
+    public function testEventsCanBeFetchedAsJsonByAnActiveAdmin()
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/events', $this->fakeData());
+        }
+
+        auth()->logout();
+
+        $user = factory(User::class)->states(['active', 'admin'])->create();
+
+        $response = $this->actingAs($user)->json('GET', '/events');
+
+        $response->assertJsonCount(5, 'data');
+    }
+
+    public function testEventsCanBeFetchedAsJsonByAnActiveUser()
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/events', $this->fakeData());
+        }
+
+        auth()->logout();
+
+        $user = factory(User::class)->state('active')->create();
+
+        $response = $this->actingAs($user)->json('GET', '/events');
+
+        $response->assertJsonCount(5, 'data');
+    }
+
+    public function testAnActiveEncoderCanDeleteHisOwnEvent()
     {
         $this->post('/events', $this->data());
 
@@ -205,6 +346,156 @@ class EventManagementTest extends TestCase
 
         $response->assertSessionHas('success');
         $this->assertEquals('Event deleted.', session('success'));
+    }
+
+    public function testAnActiveEncoderCannotDeleteAnotherUsersEvent()
+    {
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        auth()->logout();
+
+        $encoder2 = factory(User::class)->states(['active', 'encoder'])->create();
+
+        $response = $this->actingAs($encoder2)->delete('/events/' . $event->id);
+
+        $response->assertStatus(403);
+
+        $this->assertEquals(1, Event::all()->count());
+    }
+
+    public function testAnEventCanBeDeletedByAnActiveAdmin()
+    {
+        auth()->logout();
+
+        $user = factory(User::class)->states(['active', 'admin'])->create();
+
+        $this->actingAs($user)->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $response = $this->delete('/events/' . $event->id);
+
+        $this->assertEquals(0, Event::all()->count());
+
+        $response->assertRedirect('/events');
+
+        $response->assertSessionHas('success');
+        $this->assertEquals('Event deleted.', session('success'));
+    }
+
+    public function testAnEventCanBeForcedDeletedByAnActiveAdmin()
+    {
+        $this->withoutExceptionHandling();
+
+        auth()->logout();
+
+        $user = factory(User::class)->states(['active', 'admin'])->create();
+
+        $this->actingAs($user)->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $response = $this->delete('/events/' . $event->id . '/force');
+
+        $this->assertEquals(0, Event::all()->count());
+
+        $response->assertRedirect('/events');
+
+        $response->assertSessionHas('success');
+        $this->assertEquals('Event permanently deleted.', session('success'));
+    }
+
+    public function testAnEventCanNotBeForcedDeletedByAnActiveEncoder()
+    {
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $response = $this->delete('/events/' . $event->id . '/force');
+
+        $response->assertStatus(403);
+
+        $this->assertEquals(1, Event::all()->count());
+    }
+
+    public function testAnEventCanBeRestoredByAnActiveAdmin()
+    {
+        auth()->logout();
+
+        $user = factory(User::class)->states(['active', 'admin'])->create();
+
+        $this->actingAs($user);
+
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $this->delete('/events/' . $event->id);
+
+        $response = $this->post('/events/' . $event->id . '/restore');
+
+        $this->assertEquals(1, Event::all()->count());
+
+        $response->assertRedirect('/events');
+
+        $response->assertSessionHas('success');
+
+        $this->assertEquals('Event restored.', session('success'));
+    }
+
+    public function testAnActiveEncoderCanRestoreHisOwnEvent()
+    {
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $this->delete('/events/' . $event->id);
+
+        $response = $this->post('/events/' . $event->id . '/restore');
+
+        $response->assertRedirect('/events');
+
+        $this->assertEquals(1, Event::all()->count());
+
+        $response->assertSessionHas('success');
+
+        $this->assertEquals('Event restored.', session('success'));
+    }
+
+    public function testAnActiveEncoderCannotRestoreAnotherEncodersEvent()
+    {
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $this->delete('/events/' . $event->id);
+
+        auth()->logout();
+
+        $encoder1 = factory(User::class)->states(['active', 'encoder'])->create();
+
+        $response = $this->actingAs($encoder1)->post('/events/' . $event->id . '/restore');
+
+        $response->assertStatus(403);
+
+        $this->assertEquals(0, Event::all()->count());
+    }
+
+    public function testAnEventCannotBeDeletedByAnActiveUser()
+    {
+        $this->post('/events', $this->data());
+
+        $event = Event::first();
+
+        $user = factory(User::class)->state('active')->create();
+
+        $response = $this->actingAs($user)->delete('/events/' . $event->id);
+
+        $response->assertStatus(403);
+
+        $this->assertEquals(1, Event::all()->count());
     }
 
     public function testOnlyOneEventIsActivatedByAUser()

@@ -13,6 +13,7 @@ class EventController extends Controller
 
     public function __construct(EventService $service)
     {
+        $this->authorizeResource(Event::class, 'event');
         $this->service = $service;
     }
 
@@ -34,7 +35,7 @@ class EventController extends Controller
 
     public function update(Event $event, EventRequest $request)
     {
-        $this->service->update($event->id, $request->validated());
+        $this->service->update($event, $request->validated());
 
         session()->flash('info', 'Event updated.');
 
@@ -43,15 +44,40 @@ class EventController extends Controller
 
     public function destroy(Event $event)
     {
-        $this->service->delete($event->id);
-
-        session()->flash('success', 'Event deleted.');
-
-        return redirect('/events');
+        if ($this->service->delete($event)) {
+            session()->flash('success', 'Event deleted.');
+            return redirect('/events');
+        }
     }
 
     public function show(Event $event)
     {
         return $this->service->show($event->id);
+    }
+
+    public function forceDestroy(Event $event)
+    {
+        $this->authorize('forceDelete', $event);
+
+        if ($this->service->forceDestroy($event)) {
+
+            session()->flash('success', 'Event permanently deleted.');
+
+            return redirect('/events');
+        }
+    }
+
+    public function restore(int $id)
+    {
+        $event = Event::onlyTrashed()->findOrFail($id);
+
+        $this->authorize('restore', $event);
+
+        if ($this->service->restore($event)) {
+
+            session()->flash('success', 'Event restored.');
+
+            return redirect('/events');
+        }
     }
 }

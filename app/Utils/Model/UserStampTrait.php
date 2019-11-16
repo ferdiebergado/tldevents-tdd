@@ -24,6 +24,13 @@ trait UserStampTrait
         static::deleting(function ($model) {
             $user = auth()->id();
             $model->deleted_by = $user;
+            $model->save();
+        });
+
+        static::restoring(function ($model) {
+            $user = auth()->id();
+            $model->restored_by = $user;
+            // $model->save();
         });
     }
 
@@ -40,5 +47,10 @@ trait UserStampTrait
     public function destroyer()
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    public function rescuer()
+    {
+        return $this->belongsTo(User::class, 'restored_by');
     }
 }

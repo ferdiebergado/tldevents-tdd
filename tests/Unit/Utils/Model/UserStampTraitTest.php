@@ -34,6 +34,7 @@ class UserStampTraitTest extends TestCase
         $this->assertEquals($this->user->id, $event->created_by);
         $this->assertInstanceOf(User::class, $event->creator);
         $this->assertEquals($this->user->name, $event->creator->name);
+
         $this->assertEquals($this->user->id, $event->updated_by);
         $this->assertInstanceOf(User::class, $event->editor);
         $this->assertEquals($this->user->name, $event->editor->name);
@@ -54,7 +55,8 @@ class UserStampTraitTest extends TestCase
         $event->update(['title' => $this->faker->word]);
 
         $this->assertEquals($user->id, $event->fresh()->updated_by);
-        $this->assertEquals($user->name, $event->editor->name);
+        $this->assertInstanceOf(User::class, $event->fresh()->editor);
+        $this->assertEquals($user->name, $event->fresh()->editor->name);
     }
 
     /**
@@ -65,13 +67,34 @@ class UserStampTraitTest extends TestCase
     public function testDeleting()
     {
         $event = factory(event::class)->create();
-        $user = factory(User::class)->create();
+        $user = factory(User::class)->states(['active', 'encoder'])->create();
 
         $this->actingAs($user);
 
         $event->delete();
 
-        $this->assertEquals($user->id, $event->deleted_by);
-        $this->assertEquals($user->name, $event->destroyer->name);
+        $deleted = Event::onlyTrashed()->first();
+
+        $this->assertEquals($user->id, $deleted->deleted_by);
+        $this->assertInstanceOf(User::class, $deleted->destroyer);
+        $this->assertEquals($user->name, $deleted->destroyer->name);
+    }
+
+    public function testRestoring()
+    {
+        $event = factory(event::class)->create();
+        $user = factory(User::class)->states(['active', 'encoder'])->create();
+
+        $this->actingAs($user);
+
+        $event->delete();
+
+        $deleted = Event::onlyTrashed()->first();
+
+        $restored = tap($deleted)->restore();
+
+        $this->assertEquals($user->id, $restored->restored_by);
+        $this->assertInstanceOf(User::class, $restored->rescuer);
+        $this->assertEquals($user->name, $restored->rescuer->name);
     }
 }
