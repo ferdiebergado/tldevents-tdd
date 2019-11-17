@@ -32,3 +32,5 @@ $factory->state(User::class, 'active', ['is_active' => true]);
 $factory->state(User::class, 'encoder', ['role' => 2]);
 
 $factory->state(User::class, 'admin', ['role' => 1]);
+
+$factory->state(User::class, 'user', ['role' => 3]);

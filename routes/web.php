@@ -26,4 +26,10 @@ Route::group(['middleware' => ['auth', 'verified', 'active']], function () {
     Route::post('/events/{id}/restore', 'EventController@restore');
     Route::get('/events/{event}', 'EventController@show');
     Route::get('/events', 'EventController@index');
+
+    Route::post('/participants', 'ParticipantController@store');
+    Route::put('/participants/{participant}', 'ParticipantController@update');
+    Route::delete('/participants/{participant}', 'ParticipantController@destroy');
+    Route::delete('/participants/{participant}/force', 'ParticipantController@forceDestroy');
+    Route::post('/participants/{id}/restore', 'ParticipantController@restore');
 });
