@@ -117,4 +117,9 @@ class EventService
     {
         return $this->repository->restore($event);
     }
+
+    public function getActiveEventOfUser()
+    {
+        return $this->repository->activeByAuthUser();
+    }
 }

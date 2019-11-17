@@ -3,10 +3,10 @@
 namespace App\Repositories\Event;
 
 use App\Event;
-use App\Repositories\EloquentBaseRepository;
+use App\Repositories\EloquentCachedRepository;
 use App\Repositories\Event\EventRepositoryInterface;
 
-class EventEloquentRepository extends EloquentBaseRepository implements EventRepositoryInterface
+class EventEloquentRepository extends EloquentCachedRepository implements EventRepositoryInterface
 {
     public function __construct(Event $event)
     {
@@ -15,6 +15,9 @@ class EventEloquentRepository extends EloquentBaseRepository implements EventRep
 
     public function activeByAuthUser()
     {
-        return $this->model->whereIsActive(true)->whereCreatedBy(auth()->id())->latest()->first();
+        $user = auth()->id();
+        return cache()->remember($this->cachePrefix . 'active_by_user_' . $user, $this->cacheTimeout, function () use ($user) {
+            return $this->model->whereIsActive(true)->whereUpdatedBy($user)->latest()->first();
+        });
     }
 }

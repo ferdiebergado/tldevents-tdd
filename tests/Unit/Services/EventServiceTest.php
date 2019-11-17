@@ -20,6 +20,7 @@ class EventServiceTest extends TestCase
     {
         parent::setUp();
         $this->service = app()->make(EventService::class);
+        cache()->flush();
     }
 
     public function testCreate()
@@ -127,6 +128,32 @@ class EventServiceTest extends TestCase
 
         $this->assertTrue($destroyed);
         $this->assertDatabaseMissing('events', array_merge(['id' => $event->id], $this->data()));
+    }
+
+    public function testGetActiveEventOfUser()
+    {
+        $user = factory(User::class)->states(['active', 'encoder'])->create();
+
+        $this->actingAs($user);
+
+        factory(Event::class, 5)->create();
+
+        factory(Event::class)->create(['is_active' => true]);
+
+        $cacheKey = 'events_active_by_user_' . $user->id;
+
+        $this->assertTrue(cache()->missing($cacheKey));
+
+        $this->service->getActiveEventOfUser();
+
+        $this->assertTrue(cache()->has($cacheKey));
+
+        $active = $this->service->getActiveEventOfUser();
+
+        $this->assertEquals($active->updated_by, $user->id);
+        $this->assertTrue($active->is_active);
+
+        $this->assertCount(1, Event::whereIsActive(true)->whereUpdatedBy($user->id)->get());
     }
 
     public function data()

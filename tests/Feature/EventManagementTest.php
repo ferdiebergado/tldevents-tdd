@@ -302,6 +302,7 @@ class EventManagementTest extends TestCase
         $response->assertRedirect('/email/verify');
     }
 
+    /** @group update */
     public function testAnEventCanBeUpdatedByAnActiveEncoder()
     {
         $this->post('/events', $this->data());
@@ -321,6 +322,7 @@ class EventManagementTest extends TestCase
         $this->assertEquals('Event updated.', session('info'));
     }
 
+    /** @group update */
     public function testAnEventCanBeUpdatedByAnActiveAdmin()
     {
         auth()->logout();
@@ -453,6 +455,7 @@ class EventManagementTest extends TestCase
         $response->assertJsonCount(5, 'data');
     }
 
+    /** @group delete */
     public function testAnActiveEncoderCanDeleteHisOwnEvent()
     {
         $this->post('/events', $this->data());
@@ -486,6 +489,7 @@ class EventManagementTest extends TestCase
         $this->assertEquals(1, Event::all()->count());
     }
 
+    /** @group delete */
     public function testAnEventCanBeDeletedByAnActiveAdmin()
     {
         auth()->logout();
@@ -510,7 +514,7 @@ class EventManagementTest extends TestCase
     {
         $this->post('/events', $this->data());
 
-        $event = Event::first();
+        Event::first();
 
         $response = $this->delete('/events/999999999');
 
